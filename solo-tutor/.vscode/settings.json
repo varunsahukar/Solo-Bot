@@ -6,6 +6,12 @@
   },
   "python.defaultInterpreterPath": "./backend/.venv/bin/python",
   "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  "css.customData": [
+    ".vscode/css_custom_data.json"
+  ],
   "editor.tabSize": 2,
   "files.eol": "\n"
 }

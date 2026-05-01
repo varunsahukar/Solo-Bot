@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Upload, BookOpen, Code2, Home, Database } from 'lucide-react'
+import { MessageSquare, Upload, BookOpen, Code2, Home } from 'lucide-react'
 import { useActiveDoc } from '../store/activeDoc'
 import { useFileStore } from '../hooks/useFileStore'
 import type { FileRecord } from '../types'
@@ -11,7 +11,6 @@ const navItems = [
   { to: '/app/upload', icon: Upload, label: 'Upload' },
   { to: '/app/quiz', icon: BookOpen, label: 'Quiz' },
   { to: '/app/code', icon: Code2, label: 'Code' },
-  { to: '/app/supabase', icon: Database, label: 'Supabase' },
 ]
 
 export default function Sidebar() {
