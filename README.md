@@ -1,34 +1,58 @@
-## Setup
-1. Clone the repo
-2. Copy .env.example to .env and fill in all keys
-3. Run the Supabase SQL schema from storage/cloud/schema.sql
+# SoloTutor Workspace
 
-## Run backend
-cd backend
-python -m venv .venv
-source .venv/bin/activate  (Windows: .venv\Scripts\activate)
+This repository contains multiple project experiments and app variants.  
+The main active app is under `solo-tutor/`.
+
+## Quick Start
+
+1. Clone the repo.
+2. Copy `.env.example` to `.env` in the workspace root and fill keys.
+3. Apply Supabase schema from `storage/cloud/schema.sql` (or `solo-tutor/storage/cloud/schema.sql` for the app variant).
+
+## Run Main App (`solo-tutor/`)
+
+### Backend
+
+```bash
+cd solo-tutor/backend
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
+```
 
-## Run frontend
-cd frontend
+### Frontend
+
+```bash
+cd solo-tutor/frontend
 npm install
 npm run dev
+```
 
-## Architecture
-Layer contract:
-- User → Frontend (React + Dexie IndexedDB)
-- Frontend → Backend (FastAPI, API bridge only)
-- Backend → Agents (LangGraph, decision making)
-- Agents → RAG (LangChain, stateless transforms)
-- RAG → Supabase (embeddings) / IndexedDB (files, cache)
-- RAG + context → LLM (Grok → OpenAI fallback)
+## Health and Readiness Checks
 
-## Layer rules (must never be broken)
-1. frontend/src/api/ is the only folder that calls the backend
-2. rag/ and storage/cloud/ are the only files that touch Supabase
-3. frontend/src/hooks/useIndexedDB.ts is the only file that imports Dexie
-4. agents/graph.py is the only file the backend routes import from agents/
+- Health: `GET http://localhost:8000/health`
+- Readiness (env/dependency diagnostics): `GET http://localhost:8000/ready`
 
-## Run tests
-cd backend && pytest tests/ -v
+## Architecture Contract
+
+- User -> Frontend (React + Dexie IndexedDB)
+- Frontend -> Backend (FastAPI API layer)
+- Backend -> Agents (LangGraph orchestration)
+- Agents -> RAG (LangChain transforms)
+- RAG -> Supabase (vectors/storage)
+- RAG context -> LLM providers (xAI/OpenAI with fallback strategy)
+
+## Layer Rules
+
+1. `frontend/src/api/` is the only frontend folder that calls backend APIs.
+2. `rag/` and `storage/cloud/` are the only backend areas that touch Supabase.
+3. `frontend/src/hooks/useIndexedDB.ts` is the only place importing Dexie directly.
+4. `agents/graph.py` is the only agents entry imported by backend routes.
+
+## Tests
+
+```bash
+cd solo-tutor/backend
+pytest tests/ -v
+```
