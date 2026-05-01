@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-multipart
+langchain
+langgraph
+langchain-community
+supabase
+python-dotenv
+openai
+huggingface-hub
