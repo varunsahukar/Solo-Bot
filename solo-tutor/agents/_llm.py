@@ -12,8 +12,8 @@ def _get_llm_clients() -> list[ChatOpenAI]:
     grok_key = settings.GROK_API_KEY.strip()
     if grok_key:
         # Try stable first, then legacy fallback if account/model support differs.
-        clients.append(ChatOpenAI(model='grok-2-latest', openai_api_key=grok_key, openai_api_base='https://api.x.ai/v1', temperature=0.3))
-        clients.append(ChatOpenAI(model='grok-beta', openai_api_key=grok_key, openai_api_base='https://api.x.ai/v1', temperature=0.3))
+        clients.append(ChatOpenAI(model='grok-2', openai_api_key=grok_key, openai_api_base='https://api.x.ai/v1', temperature=0.3))
+        clients.append(ChatOpenAI(model='grok-2-1212', openai_api_key=grok_key, openai_api_base='https://api.x.ai/v1', temperature=0.3))
 
     openai_key = settings.OPENAI_API_KEY.strip()
     if openai_key:
@@ -37,15 +37,12 @@ async def call_llm(prompt: str) -> str:
 
     hf_token = settings.HUGGINGFACE_TOKEN.strip()
     if hf_token:
-        model = settings.HUGGINGFACE_LLM_MODEL.strip() or 'google/flan-t5-large'
+        model = settings.HUGGINGFACE_LLM_MODEL.strip() or 'meta-llama/Llama-3.2-1B-Instruct'
+        if model == 'google/flan-t5-large': model = 'meta-llama/Llama-3.2-1B-Instruct' # Override bad default
         try:
             client = InferenceClient(model=model, token=hf_token)
-            generated = client.text_generation(
-                prompt,
-                max_new_tokens=300,
-                temperature=0.2,
-                return_full_text=False,
-            )
+            res = client.chat_completion(messages=[{"role": "user", "content": prompt}], max_tokens=300, temperature=0.2)
+            generated = res.choices[0].message.content
             if generated:
                 return str(generated)
             errors.append(f'huggingface:{model}: empty response')
