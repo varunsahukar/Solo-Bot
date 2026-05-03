@@ -1,64 +1,16 @@
-import Dexie, { Table } from "dexie";
-
-export interface Document {
-  doc_id: string;
-  name: string;
-  content: string;
-  uploadedAt: Date;
-}
-
-export interface ChatMessage {
-  id?: number;
-  doc_id?: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+import Dexie, { type EntityTable } from 'dexie'
+import { nanoid } from 'nanoid'
+import type { CacheRecord, FileRecord, PrefRecord, SessionRecord } from '../types'
 
 class SoloTutorDB extends Dexie {
-  documents!: Table<Document>;
-  messages!: Table<ChatMessage>;
-
+  files!: EntityTable<FileRecord, 'id'>
+  sessions!: EntityTable<SessionRecord, 'id'>
+  cache!: EntityTable<CacheRecord, 'query_hash'>
+  prefs!: EntityTable<PrefRecord, 'key'>
   constructor() {
-    super("SoloTutorDB");
-    this.version(1).stores({
-      documents: "doc_id, name, uploadedAt",
-      messages: "++id, doc_id, timestamp"
-    });
+    super('SoloTutorDB')
+    this.version(1).stores({ files: '++id,doc_id,name,type,created_at', sessions: '++id,doc_id,updated_at', cache: 'query_hash,doc_id', prefs: 'key' })
   }
 }
-
-const db = new SoloTutorDB();
-
-export function useIndexedDB() {
-  const addDocument = async (doc: Document) => {
-    await db.documents.put(doc);
-  };
-
-  const getDocument = async (doc_id: string) => {
-    return await db.documents.get(doc_id);
-  };
-
-  const getAllDocuments = async () => {
-    return await db.documents.toArray();
-  };
-
-  const addMessage = async (message: ChatMessage) => {
-    await db.messages.put(message);
-  };
-
-  const getMessages = async (doc_id?: string) => {
-    if (doc_id) {
-      return await db.messages.where("doc_id").equals(doc_id).sortBy("timestamp");
-    }
-    return await db.messages.orderBy("timestamp").toArray();
-  };
-
-  return {
-    addDocument,
-    getDocument,
-    getAllDocuments,
-    addMessage,
-    getMessages
-  };
-}
+export const db = new SoloTutorDB()
+export const generateDocId = (): string => nanoid(12)

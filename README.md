@@ -1,58 +1,47 @@
-# SoloTutor Workspace
+# SOLO TUTOR
 
-This repository contains multiple project experiments and app variants.  
-The main active app is under `solo-tutor/`.
+AI-powered study app: chat with documents, generate quizzes, explain code, summarize videos.
 
-## Quick Start
+## Current UI Routes
 
-1. Clone the repo.
-2. Copy `.env.example` to `.env` in the workspace root and fill keys.
-3. Apply Supabase schema from `storage/cloud/schema.sql` (or `solo-tutor/storage/cloud/schema.sql` for the app variant).
+- Landing page: `http://localhost:5173/`
+- Workspace chat: `http://localhost:5173/app/chat`
+- Upload: `http://localhost:5173/app/upload`
+- Quiz: `http://localhost:5173/app/quiz`
+- Code assistant: `http://localhost:5173/app/code`
 
-## Run Main App (`solo-tutor/`)
+## Setup
+1. `cp .env.example .env` and fill all keys
+2. Run Supabase SQL from `storage/cloud/schema.sql` in Supabase dashboard
 
-### Backend
-
+## Run Backend
 ```bash
-cd solo-tutor/backend
+cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-### Frontend
+### Backend diagnostics
 
+- `GET /health` -> service heartbeat
+- `GET /ready` -> env/provider readiness checks
+
+## Run Frontend
 ```bash
-cd solo-tutor/frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-## Health and Readiness Checks
-
-- Health: `GET http://localhost:8000/health`
-- Readiness (env/dependency diagnostics): `GET http://localhost:8000/ready`
-
-## Architecture Contract
-
-- User -> Frontend (React + Dexie IndexedDB)
-- Frontend -> Backend (FastAPI API layer)
-- Backend -> Agents (LangGraph orchestration)
-- Agents -> RAG (LangChain transforms)
-- RAG -> Supabase (vectors/storage)
-- RAG context -> LLM providers (xAI/OpenAI with fallback strategy)
-
-## Layer Rules
-
-1. `frontend/src/api/` is the only frontend folder that calls backend APIs.
-2. `rag/` and `storage/cloud/` are the only backend areas that touch Supabase.
-3. `frontend/src/hooks/useIndexedDB.ts` is the only place importing Dexie directly.
-4. `agents/graph.py` is the only agents entry imported by backend routes.
-
-## Tests
-
+## Test
 ```bash
-cd solo-tutor/backend
-pytest tests/ -v
+cd backend && pytest tests/ -v
 ```
+
+## Provider Notes
+
+- Backend supports xAI and OpenAI for LLM calls, with fallback attempts in sequence.
+- Hugging Face token is used for embedding/auth flows and optional fallback integration paths.
+- Supabase credentials must be valid for ingest/retrieval to work (`/ready` reports exact failures).

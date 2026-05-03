@@ -1,9 +1,49 @@
+# Environment
 .env
-.env.local
-.env.*
-!.env.example
-*.pem
-*.key
+.venv/
+venv/
+env/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
 .pytest_cache/
+.mypy_cache/
+.pyre/
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Storage / Data
+storage/
+*.db
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/
+.cursor/
+.trae/
+.claude/
+.agents/
+.qoder/
+
+# Workspace cleanup
+legacy_experiments/
+file_structure.md
+read_doc_content.py
+scratch_*.py
+test.txt
+test2.txt

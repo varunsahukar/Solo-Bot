@@ -1,42 +1,26 @@
--- Enable pgvector
 CREATE EXTENSION IF NOT EXISTS vector;
-
--- Create documents table
 CREATE TABLE IF NOT EXISTS documents (
-    id BIGSERIAL PRIMARY KEY,
-    doc_id TEXT NOT NULL UNIQUE,
-    content TEXT NOT NULL,
-    embedding vector(384) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  doc_id text NOT NULL,
+  chunk_id integer NOT NULL,
+  content text NOT NULL,
+  embedding vector(384),
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(doc_id, chunk_id)
 );
-
--- Create index for faster similarity search
 CREATE INDEX IF NOT EXISTS documents_embedding_idx ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-
--- Create match_documents function
 CREATE OR REPLACE FUNCTION match_documents(
-    query_embedding vector(384),
-    match_count INT DEFAULT 5,
-    doc_id TEXT DEFAULT NULL
+  query_embedding vector(384), 
+  match_threshold float DEFAULT 0.3, 
+  match_count int DEFAULT 5,
+  filter_doc_id text DEFAULT NULL
 )
-RETURNS TABLE (
-    id BIGINT,
-    doc_id TEXT,
-    content TEXT,
-    similarity FLOAT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RETURN QUERY
-    SELECT
-        d.id,
-        d.doc_id,
-        d.content,
-        1 - (d.embedding <=> query_embedding) AS similarity
-    FROM documents d
-    WHERE (doc_id IS NULL OR d.doc_id = doc_id)
-    ORDER BY d.embedding <=> query_embedding
-    LIMIT match_count;
-END;
+RETURNS TABLE(id uuid, doc_id text, content text, similarity float)
+LANGUAGE sql STABLE AS $$
+  SELECT id, doc_id, content, 1 - (embedding <=> query_embedding) AS similarity
+  FROM documents 
+  WHERE 1 - (embedding <=> query_embedding) > match_threshold
+    AND (filter_doc_id IS NULL OR documents.doc_id = filter_doc_id)
+  ORDER BY similarity DESC LIMIT match_count;
 $$;

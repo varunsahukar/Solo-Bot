@@ -1,32 +1,32 @@
-from typing import List, Dict
-from backend.storage.cloud.client import get_supabase_client
-from backend.embeddings import get_embeddings
-
-async def search_vectors(query: str, doc_id: str | None = None) -> List[Dict]:
+import logging
+from storage.cloud.client import get_supabase
+logger = logging.getLogger(__name__)
+async def upsert_embedding(doc_id: str, chunk_id: int, content: str, vector: list[float], metadata: dict) -> None:
+    try: get_supabase().table('documents').upsert({'doc_id':doc_id,'chunk_id':chunk_id,'content':content,'embedding':vector,'metadata':metadata}, on_conflict='doc_id,chunk_id').execute()
+    except Exception as e: logger.error('upsert_embedding failed: %s', e); raise
+async def search_similar(query_vector: list[float], doc_id: str = '', top_k: int = 5) -> list[str]:
     try:
-        supabase = get_supabase_client()
-        query_embedding = await get_embeddings(query)
-        
-        rpc_params = {
-            "query_embedding": query_embedding,
-            "match_count": 5
-        }
-        if doc_id:
-            rpc_params["doc_id"] = doc_id
+        # 1. Try new RPC version (with filter_doc_id)
+        try:
+            params = {'query_embedding': query_vector, 'match_threshold': 0.1, 'match_count': top_k}
+            if doc_id: params['filter_doc_id'] = doc_id
+            r = get_supabase().rpc('match_documents', params).execute()
+            return [x['content'] for x in (r.data or [])]
+        except Exception as rpc_err:
+            logger.warning('New RPC version failed, trying fallback: %s', rpc_err)
             
-        result = supabase.rpc("match_documents", rpc_params).execute()
-        return result.data if result.data else []
+            # 2. Fallback: Try old RPC version (without filter_doc_id)
+            r = get_supabase().rpc('match_documents', {
+                'query_embedding': query_vector,
+                'match_threshold': 0.1,
+                'match_count': 100 # Fetch more and filter in Python
+            }).execute()
+            
+            rows = r.data or []
+            if doc_id:
+                rows = [row for row in rows if row.get('doc_id') == doc_id]
+            return [x['content'] for x in rows[:top_k]]
+            
     except Exception as e:
-        print(f"Vector search error: {e}")
-        return [{"content": f"Search result for: {query}"}]
-
-async def upsert_vector(doc_id: str, embedding: List[float], content: str):
-    try:
-        supabase = get_supabase_client()
-        supabase.table("documents").insert({
-            "doc_id": doc_id,
-            "content": content,
-            "embedding": embedding
-        }).execute()
-    except Exception as e:
-        print(f"Vector upsert error: {e}")
+        logger.error('search_similar failed: %s', e)
+        return []

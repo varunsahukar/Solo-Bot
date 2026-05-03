@@ -1,0 +1,28 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "venv",
+    "legacy_experiments",
+    "frontend",
+    "**/node_modules",
+    "**/__pycache__"
+  ],
+
+  "venvPath": ".",
+  "venv": "venv",
+  "pythonVersion": "3.13",
+  "analysis": {
+    "extraPaths": [
+      "."
+    ],
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": true
+  }
+
+}
+
+
+
+

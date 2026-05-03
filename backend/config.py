@@ -1,18 +1,33 @@
-from pydantic_settings import BaseSettings
+from functools import lru_cache
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parents[1]
 
 class Settings(BaseSettings):
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
-    GROK_API_KEY: str
-    OPENAI_API_KEY: str
-    HUGGINGFACE_TOKEN: str
-    ALLOWED_ORIGINS: str = "http://localhost:5173"
-    GROK_BASE_URL: str = "https://api.x.ai/v1"
-    GROK_MODEL: str = "grok-beta"
-    OPENAI_MODEL: str = "gpt-4o-mini"
-    HUGGINGFACE_EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    SUPABASE_URL: str = ''
+    SUPABASE_KEY: str = ''
+    NEXT_PUBLIC_SUPABASE_URL: str = ''
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: str = ''
+    GROK_API_KEY: str = ''
+    HUGGINGFACE_TOKEN: str = ''
+    HUGGINGFACE_LLM_MODEL: str = 'google/flan-t5-large'
+    OPENAI_API_KEY: str = ''
+    ALLOWED_ORIGINS: str = 'http://localhost:5173'
+    model_config = SettingsConfigDict(
+        env_file=str(BASE_DIR / '.env'),
+        extra='ignore',
+    )
 
-    class Config:
-        env_file = ".env"
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+def get_supabase_url(settings: Settings) -> str:
+    return (settings.SUPABASE_URL or settings.NEXT_PUBLIC_SUPABASE_URL).strip()
+
+
+def get_supabase_key(settings: Settings) -> str:
+    return (settings.SUPABASE_KEY or settings.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).strip()
