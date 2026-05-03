@@ -10,10 +10,8 @@ class Settings(BaseSettings):
     NEXT_PUBLIC_SUPABASE_URL: str = ''
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: str = ''
     GROK_API_KEY: str = ''
-    HUGGINGFACE_TOKEN: str = ''
-    HUGGINGFACE_LLM_MODEL: str = 'google/flan-t5-large'
-    OPENAI_API_KEY: str = ''
     ALLOWED_ORIGINS: str = 'http://localhost:5173'
+
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / '.env'),
         extra='ignore',

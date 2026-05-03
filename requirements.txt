@@ -7,9 +7,10 @@ python-multipart
 supabase
 langchain
 langchain-community
-langchain-openai
+langchain-groq
 langgraph
 langchain-text-splitters
+fastembed
 youtube-transcript-api==0.6.2
 yt-dlp
 httpx
