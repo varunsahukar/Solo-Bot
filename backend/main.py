@@ -14,10 +14,11 @@ from storage.cloud.client import get_supabase
 logging.basicConfig(level=logging.INFO)
 settings = get_settings()
 app = FastAPI(title='SOLO TUTOR API', version='1.0.0')
-origins = settings.ALLOWED_ORIGINS.split(',')
+
+# Open CORS for easier frontend integration (Netlify/any origin)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if "*" in origins else origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*']
@@ -25,8 +26,12 @@ app.add_middleware(
 
 app.include_router(chat.router); app.include_router(ingest.router); app.include_router(quiz.router); app.include_router(code.router); app.include_router(video.router)
 
+@app.get('/')
+async def root(): return {'status': 'ok', 'message': 'SOLO TUTOR API is running'}
+
 @app.get('/health')
 async def health(): return {'status': 'ok', 'version': '1.0.0'}
+
 
 
 @app.get('/ready')
