@@ -4,7 +4,10 @@ async def retrieve_context(query: str, doc_id: str = '', top_k: int = 5) -> list
     try:
         # 1. Try vector search
         vector = embed_chunks([{'doc_id':'query','chunk_id':0,'content':query}])[0]['vector']
-        results = await search_similar(vector, doc_id=doc_id, top_k=top_k)
+        results = []
+        if vector:
+            results = await search_similar(vector, doc_id=doc_id, top_k=top_k)
+
         
         # 2. Fallback: If no results found and we have a doc_id, just get the first few chunks
         if not results and doc_id:
