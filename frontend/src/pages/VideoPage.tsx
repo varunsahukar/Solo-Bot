@@ -6,7 +6,7 @@ import { useFileStore } from '../hooks/useFileStore'
 import { generateDocId } from '../hooks/useIndexedDB'
 import { useChatCache } from '../hooks/useChatCache'
 import { sendChat } from '../api/chat'
-import axios from 'axios'
+import api from '../api/client'
 import type { Message } from '../types'
 
 export default function VideoPage() {
@@ -49,7 +49,8 @@ export default function VideoPage() {
     
     try {
       // 1. Fetch transcript, trigger ingestion (BG), and get summary (Fast Path)
-      const res = await axios.post('http://localhost:8000/api/video/youtube', { url, doc_id: newDocId })
+      const res = await api.post('/api/video/youtube', { url, doc_id: newDocId })
+
       
       // 2. Set the summary immediately from the first response
       setSummary(res.data.summary)
