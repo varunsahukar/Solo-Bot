@@ -1,24 +1,21 @@
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from backend.config import get_settings
 
 _settings = get_settings()
 
-# Initialize HuggingFace embedder only if HUGGINGFACE_TOKEN is set.
-# Using 'sentence-transformers/all-MiniLM-L6-v2' which produces 384-dimension vectors.
+# Use FastEmbed with BAAI/bge-small-en-v1.5 (384 dimensions, ~100MB RAM)
+# This model uses ONNX and has NO torch dependency.
 _embedder = None
-if _settings.HUGGINGFACE_TOKEN.strip():
-    try:
-        _embedder = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-    except Exception as e:
-        print(f"Failed to initialize HuggingFaceEmbeddings: {e}")
+try:
+    _embedder = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+except Exception as e:
+    print(f"Failed to initialize FastEmbed: {e}")
 
 def embed_chunks(chunks: list[dict]) -> list[dict]:
     if not chunks:
         return chunks
     
-    # If no embedder (token missing or init failed), fall back to plain text without vectors
+    # If no embedder (init failed or too heavy), fall back to plain text without vectors
     if not _embedder:
         for chunk in chunks:
             chunk['vector'] = None
@@ -37,6 +34,7 @@ def embed_chunks(chunks: list[dict]) -> list[dict]:
             chunk['vector'] = None
             
     return chunks
+
 
 
 
