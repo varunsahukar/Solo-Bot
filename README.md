@@ -42,6 +42,8 @@ cd backend && pytest tests/ -v
 
 ## Provider Notes
 
-- Backend supports xAI and OpenAI for LLM calls, with fallback attempts in sequence.
-- Hugging Face token is used for embedding/auth flows and optional fallback integration paths.
-- Supabase credentials must be valid for ingest/retrieval to work (`/ready` reports exact failures).
+- **LLM**: Powered by **Groq** (llama-3.1-8b-instant) for low-latency, high-performance inference.
+- **Embeddings**: Uses **FastEmbed** for local, memory-efficient vector embeddings.
+- **Database**: **Supabase** is used for vector storage and authentication.
+- **Transcripts**: **yt-dlp** and **youtube-transcript-api** are used for video processing.
+
