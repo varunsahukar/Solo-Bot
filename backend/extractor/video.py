@@ -1,32 +1,21 @@
 import os
 import subprocess
 import tempfile
-from faster_whisper import WhisperModel
 
-_model = None
-
-def _get_model():
-    global _model
-    if _model is None:
-        _model = WhisperModel('base', device='cpu', compute_type='int8')
-    return _model
+# Removed local faster-whisper to save 1GB+ RAM. 
+# YouTube videos are handled via youtube-transcript-api in backend/utils/youtube.py.
+# Local video files now require embedded metadata or external transcription APIs.
 
 async def extract_video_text(file_path: str) -> str:
-    actual_path = file_path
+    # This extractor is now simplified to avoid heavy memory usage.
+    # We prioritize youtube-transcript-api (cloud) over local transcription.
     try:
         if file_path.startswith('http'):
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmp_file:
-                actual_path = tmp_file.name
-            subprocess.run(
-                ['yt-dlp', '-f', 'bestaudio', '-o', actual_path, file_path],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        segments, _ = _get_model().transcribe(actual_path)
-        return ' '.join(segment.text for segment in segments).strip()
+            # For YouTube, we should use the utility that doesn't download the video
+            from backend.utils.youtube import get_youtube_transcript
+            return get_youtube_transcript(file_path)
+            
+        raise ValueError("Local video transcription is disabled for memory efficiency. Please use YouTube links.")
     except Exception as exc:
         raise RuntimeError(f'Video extraction failed: {exc}') from exc
-    finally:
-        if file_path.startswith('http') and os.path.exists(actual_path):
-            os.unlink(actual_path)
+
