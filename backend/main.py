@@ -35,7 +35,7 @@ async def ready() -> dict[str, Any]:
     supabase_key = get_supabase_key(settings)
     checks: dict[str, Any] = {
         'supabase_configured': bool(supabase_url and supabase_key),
-        'llm_configured': bool(settings.GROK_API_KEY or settings.OPENAI_API_KEY or settings.HUGGINGFACE_TOKEN),
+        'llm_configured': bool(settings.GROK_API_KEY),
         'supabase_connection': False,
         'errors': [],
     }
@@ -50,7 +50,8 @@ async def ready() -> dict[str, Any]:
         checks['errors'].append('supabase: missing SUPABASE_URL or SUPABASE_KEY')
 
     if not checks['llm_configured']:
-        checks['errors'].append('llm: missing GROK_API_KEY, OPENAI_API_KEY, and HUGGINGFACE_TOKEN')
+        checks['errors'].append('llm: missing GROK_API_KEY')
+
 
     status = 'ready' if checks['supabase_connection'] and checks['llm_configured'] else 'degraded'
     return {'status': status, 'checks': checks}
