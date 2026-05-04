@@ -31,8 +31,12 @@ async def youtube_transcript_endpoint(req: YoutubeRequest, background_tasks: Bac
             'doc_id': req.doc_id
         }
 
+    except RuntimeError as e:
+        # Known errors like "Transcript not available"
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
 
 @router.post('')
 async def video_summary_endpoint(req: YoutubeRequest):
