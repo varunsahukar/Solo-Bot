@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CheckCircle, HelpCircle, ArrowRight, RefreshCw } from 'lucide-react'
 import { generateQuiz } from '../api/quiz'
 import { useActiveDoc } from '../store/activeDoc'
 import type { QuizQuestion } from '../types'
@@ -41,52 +42,55 @@ export default function QuizPage() {
     return isMatch(userAnswers[i], q.answer) ? acc + 1 : acc
   }, 0)
 
-  if (!docId) return <div className='p-8 text-slate-400'>Upload a document first.</div>
+  if (!docId) return <div className='p-8 text-zinc-500 font-bold uppercase tracking-widest text-xs'>Select a document to generate a quiz.</div>
 
   return (
-    <div className='mx-auto max-w-4xl p-8'>
-      <h2 className='mb-4 text-2xl font-semibold tracking-wide text-white'>Quiz</h2>
-      <div className='flex gap-2 mb-6'>
+    <div className='flex h-full flex-col p-8'>
+      <div className='mb-8 flex items-center justify-between border-b border-white/10 pb-4'>
+        <h2 className='text-xs font-bold uppercase tracking-[0.3em] text-zinc-400'>Neural Workspace / Adaptive Quiz</h2>
+      </div>
+
+      <div className='mb-12 flex gap-2'>
         <input
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder='Topic (e.g. "React Hooks", "History")'
-          className='flex-1 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/35 outline-none'
+          className='flex-1 bg-zinc-950 border border-white/10 p-4 text-sm text-white outline-none focus:border-white transition placeholder:text-zinc-700'
         />
         <button
           onClick={load}
           disabled={loading}
-          className='rounded-xl border border-white/20 bg-white px-6 py-2 text-sm font-semibold text-black transition hover:bg-slate-200 disabled:opacity-60'
+          className='bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-black hover:bg-zinc-200 disabled:opacity-30'
         >
-          {loading ? 'Generating...' : 'Start Quiz'}
+          {loading ? 'Generating...' : 'Generate'}
         </button>
       </div>
 
       {questions.length > 0 && (
-        <div className='space-y-6'>
+        <div className='space-y-12 pb-20'>
           {questions.map((q, i) => {
-            const hasAnyMatch = q.options.some(opt => isMatch(q.answer, opt));
-            
             return (
-              <div key={i} className='rounded-2xl border border-white/10 bg-black/40 p-6 shadow-xl transition-all'>
-                <p className='text-lg font-medium text-white mb-4'>
-                  <span className='mr-2 text-slate-500'>{i + 1}.</span>
-                  {q.question}
-                </p>
-                <div className='grid gap-3'>
+              <div key={i} className='border border-white/5 bg-zinc-950/30 p-8 relative'>
+                <div className='absolute -left-4 top-8 flex h-8 w-8 items-center justify-center bg-zinc-900 border border-white/10 text-[10px] font-bold text-white'>
+                   {i + 1}
+                </div>
+                
+                <p className='text-lg font-bold text-white mb-8 pl-4'>{q.question}</p>
+                
+                <div className='grid gap-4 pl-4'>
                   {q.options.map((opt) => {
                     const isSelected = userAnswers[i] === opt;
                     const isCorrect = isMatch(q.answer, opt);
-                    let className = 'cursor-pointer rounded-xl border p-4 text-sm transition-all ';
+                    let className = 'cursor-pointer border p-4 text-xs font-bold uppercase tracking-widest transition-all ';
                     
                     if (submitted) {
-                      if (isCorrect) className += 'border-green-500/50 bg-green-500/10 text-green-400 ';
-                      else if (isSelected && !isCorrect) className += 'border-red-500/50 bg-red-500/10 text-red-400 ';
-                      else className += 'border-white/5 bg-white/5 text-slate-500 ';
+                      if (isCorrect) className += 'border-emerald-500/50 bg-emerald-500/5 text-emerald-500 ';
+                      else if (isSelected && !isCorrect) className += 'border-red-500/50 bg-red-500/5 text-red-500 ';
+                      else className += 'border-white/5 bg-transparent text-zinc-700 ';
                     } else {
                       className += isSelected 
-                        ? 'border-white/40 bg-white/10 text-white ' 
-                        : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/10 ';
+                        ? 'border-white bg-white text-black ' 
+                        : 'border-white/10 bg-transparent text-zinc-500 hover:border-white/30 hover:text-white ';
                     }
 
                     return (
@@ -96,11 +100,6 @@ export default function QuizPage() {
                     );
                   })}
                 </div>
-                {submitted && !hasAnyMatch && (
-                  <div className='mt-4 rounded-lg bg-yellow-500/10 p-3 text-xs text-yellow-500 border border-yellow-500/20'>
-                    Note: The AI's recorded answer ("{q.answer}") didn't perfectly match any option.
-                  </div>
-                )}
               </div>
             );
           })}
@@ -108,21 +107,22 @@ export default function QuizPage() {
           {!submitted ? (
             <button
               onClick={() => setSubmitted(true)}
-              className='w-full rounded-xl bg-blue-600 p-4 font-bold text-white transition hover:bg-blue-500'
+              className='w-full bg-white py-6 text-sm font-bold uppercase tracking-[0.2em] text-black hover:bg-zinc-200 shadow-2xl'
             >
               Submit Quiz
             </button>
           ) : (
-            <div className='rounded-2xl border border-blue-500/30 bg-blue-500/10 p-8 text-center'>
-              <h3 className='text-2xl font-bold text-white mb-2'>Quiz Completed!</h3>
-              <p className='text-slate-300'>
-                You scored <span className='text-blue-400 text-xl font-bold'>{score}</span> out of {questions.length}
+            <div className='border border-blue-500/30 bg-blue-500/5 p-12 text-center'>
+              <h3 className='text-xs font-bold uppercase tracking-[0.4em] text-blue-400 mb-4'>Assessment Result</h3>
+              <p className='text-5xl font-black text-white mb-6 display-type'>
+                {score} <span className='text-zinc-700 text-3xl font-light'>/ {questions.length}</span>
               </p>
               <button
                 onClick={load}
-                className='mt-4 rounded-xl border border-white/20 bg-white px-6 py-2 text-sm font-semibold text-black hover:bg-slate-200'
+                className='inline-flex items-center gap-3 bg-white px-10 py-4 text-xs font-bold uppercase tracking-widest text-black hover:bg-zinc-200'
               >
-                Try Another
+                <RefreshCw size={14} />
+                New Quiz
               </button>
             </div>
           )}

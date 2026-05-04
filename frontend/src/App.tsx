@@ -10,9 +10,10 @@ import SupabasePage from './pages/page'
 
 function TutorWorkspace() {
   return (
-    <div className='flex h-screen bg-transparent text-white'>
+    <div className='flex h-screen bg-black text-white dashboard-container'>
       <Sidebar />
-      <main className='relative z-10 flex-1 overflow-auto'>
+      <main className='relative z-10 flex-1 overflow-auto bg-transparent'>
+
         <Routes>
           <Route path='chat' element={<ChatPage />} />
           <Route path='upload' element={<UploadPage />} />

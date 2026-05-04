@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Video, MessageSquare, Sparkles, ArrowRight } from 'lucide-react'
-
+import { Video, MessageSquare, Sparkles, ArrowRight, Play, Cpu, Bot } from 'lucide-react'
 import { useActiveDoc } from '../store/activeDoc'
 import { useFileStore } from '../hooks/useFileStore'
 import { generateDocId } from '../hooks/useIndexedDB'
@@ -24,7 +23,6 @@ export default function VideoPage() {
     if (url) setThumbnail(getThumbnail(url))
   }, [url])
 
-  
   // Chat state
   const [q, setQ] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
@@ -48,14 +46,9 @@ export default function VideoPage() {
     const newDocId = generateDocId()
     
     try {
-      // 1. Fetch transcript, trigger ingestion (BG), and get summary (Fast Path)
       const res = await api.post('/api/video/youtube', { url, doc_id: newDocId })
-
-      
-      // 2. Set the summary immediately from the first response
       setSummary(res.data.summary)
 
-      // 3. Save a virtual file record
       await saveFileRecord({
         doc_id: newDocId,
         name: `YouTube: ${url.split('v=')[1]?.split('&')[0] || 'Video'}`,
@@ -68,7 +61,6 @@ export default function VideoPage() {
       setFilename(`YouTube Video`)
       
     } catch (err: any) {
-
       alert(err.response?.data?.detail || 'Failed to process YouTube video')
     } finally {
       setLoading(false)
@@ -99,100 +91,90 @@ export default function VideoPage() {
   }
 
   return (
-    <div className='flex h-full flex-col p-8 lg:p-12 overflow-auto'>
-      <div className='mx-auto w-full max-w-6xl'>
-        <div className='mb-12'>
-          <h2 className='display-type text-4xl font-semibold tracking-tight mb-3'>
-            Video Intelligence
-          </h2>
-          <p className='text-slate-400 text-lg'>Transform any YouTube video into structured lessons.</p>
-        </div>
+    <div className='flex h-full flex-col p-8'>
+      <div className='mb-8 flex items-center justify-between border-b border-white/10 pb-4'>
+        <h2 className='text-xs font-bold uppercase tracking-[0.3em] text-zinc-400'>Neural Workspace / Video Intelligence</h2>
+      </div>
 
-        <div className='glass-panel p-6 mb-12 shadow-2xl transition-all duration-300 hover:border-white/10'>
-          <div className='flex flex-col md:flex-row gap-4'>
-            <div className='relative flex-1'>
-              <input
-                type='text'
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder='Paste YouTube URL'
-                className='w-full rounded-xl bg-white/5 border border-white/5 px-4 py-4 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all'
-              />
-            </div>
-            <button
-              onClick={processYoutube}
-              disabled={loading || !url.trim()}
-              className='rounded-xl bg-blue-600 px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:bg-blue-500 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50'
-            >
-
-              {loading ? (
-                <div className='flex items-center gap-2'>
-                  <div className='h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent' />
-                  <span>Analyzing...</span>
-                </div>
-              ) : (
-                'Summarize'
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className='grid grid-cols-1 gap-10 lg:grid-cols-5'>
-          <div className='lg:col-span-3 space-y-6'>
-            <div className='flex items-center gap-3 mb-2 px-2'>
-              <div className='h-2 w-2 rounded-full bg-blue-400 animate-pulse' />
-              <h3 className='text-sm font-bold uppercase tracking-widest text-slate-400'>Analysis Summary</h3>
-            </div>
-
-            {thumbnail && (
-              <div className='glass-panel p-2 mb-6 overflow-hidden animate-in fade-in zoom-in-95 duration-500'>
-                <img src={thumbnail} alt='Video Preview' className='w-full rounded-lg aspect-video object-cover' />
+      <div className='grid lg:grid-cols-5 gap-8 flex-1'>
+        <div className='lg:col-span-3 flex flex-col'>
+          <div className='mb-8 border border-white/10 bg-zinc-950/50 p-6'>
+            <div className='flex gap-2'>
+              <div className='relative flex-1'>
+                 <input
+                  type='text'
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder='YouTube Source URL...'
+                  className='w-full bg-zinc-900 border border-white/5 p-4 text-sm text-white font-mono outline-none focus:border-white transition-all placeholder:text-zinc-800'
+                />
               </div>
-            )}
+              <button
+                onClick={processYoutube}
+                disabled={loading || !url.trim()}
+                className='bg-white px-8 text-xs font-bold uppercase tracking-widest text-black hover:bg-zinc-200 disabled:opacity-30 transition-all'
+              >
+                {loading ? 'Synthesizing...' : 'Summarize'}
+              </button>
+            </div>
+          </div>
 
-            {summary ? (
-              <div className='glass-panel p-10 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
+          <div className='flex-1 flex flex-col gap-6 overflow-auto scrollbar-hide'>
+             <div className='flex items-center gap-3 px-2'>
+                <Cpu size={14} className='text-blue-500' />
+                <span className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>Analysis Summary</span>
+             </div>
 
-                <div className='prose prose-invert max-w-none'>
-                  <div className='space-y-6 text-slate-200 leading-relaxed text-lg whitespace-pre-wrap font-light'>
-                    {summary}
+             {thumbnail && (
+               <div className='border border-white/5 p-1 bg-zinc-950 mb-2'>
+                 <img src={thumbnail} alt='Preview' className='w-full grayscale contrast-125 opacity-80 aspect-video object-cover' />
+               </div>
+             )}
+
+             <div className='flex-1 border border-white/5 bg-zinc-950/50 p-8'>
+                {summary ? (
+                  <div className='prose prose-invert max-w-none'>
+                    <div className='text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap font-light'>
+                      {summary}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className='glass-panel h-[500px] flex flex-col items-center justify-center border-dashed opacity-40 group'>
-                <div className='h-16 w-16 rounded-full border border-white/10 flex items-center justify-center mb-4 transition-transform group-hover:scale-110'>
-                  <Video size={24} className='text-slate-400' />
-                </div>
-                <p className='text-slate-500 font-medium'>Paste a link to see analysis</p>
-              </div>
-            )}
+                ) : (
+                  <div className='h-full flex flex-col items-center justify-center opacity-20 grayscale'>
+                    <Play size={48} className='mb-6' />
+                    <p className='text-[10px] uppercase font-bold tracking-widest'>Ready for Input</p>
+                  </div>
+                )}
+             </div>
           </div>
+        </div>
 
-          {/* Right: Integrated Chat (2/5 columns) */}
-          <div className='lg:col-span-2 space-y-6'>
-            <div className='flex items-center gap-3 mb-2 px-2'>
-              <div className='h-2 w-2 rounded-full bg-purple-400 animate-pulse' />
-              <h3 className='text-sm font-bold uppercase tracking-widest text-slate-400'>Knowledge Chat</h3>
-            </div>
-            <div className='glass-panel flex flex-col h-[600px] overflow-hidden shadow-2xl relative'>
+        <div className='lg:col-span-2 flex flex-col border-l border-white/5 pl-8'>
+           <div className='flex items-center gap-3 mb-6 px-2'>
+              <MessageSquare size={14} className='text-purple-500' />
+              <span className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>Knowledge Chat</span>
+           </div>
+           
+           <div className='flex-1 flex flex-col border border-white/5 bg-black overflow-hidden relative'>
               <div className='flex-1 overflow-auto p-6 space-y-6 scrollbar-hide'>
                 {messages.length === 0 && (
-                  <div className='flex flex-col items-center justify-center h-full opacity-30 text-center px-6'>
-                    <MessageSquare size={32} className='mb-4' />
-                    <p className='text-sm'>Generate a summary first to start chatting about the video content.</p>
+                  <div className='flex flex-col items-center justify-center h-full opacity-10 text-center px-6'>
+                    <Bot size={48} className='mb-6' />
+                    <p className='text-[10px] uppercase font-bold tracking-widest'>Neural Context Empty</p>
                   </div>
                 )}
                 {messages.map((m, i) => (
                   <div
                     key={i}
-                    className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} animate-in fade-in zoom-in-95 duration-300`}
+                    className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
+                    <div className='mb-1 text-[9px] font-bold uppercase tracking-widest text-zinc-700'>
+                      {m.role === 'user' ? 'User' : 'Assistant'}
+                    </div>
                     <div
-                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-sm ${
+                      className={`max-w-[90%] border p-4 text-xs leading-relaxed ${
                         m.role === 'user'
-                          ? 'bg-blue-500 text-white font-medium rounded-tr-none'
-                          : 'bg-white/5 border border-white/10 text-slate-100 rounded-tl-none'
+                          ? 'border-white/10 bg-white text-black'
+                          : 'border-white/5 bg-zinc-950 text-zinc-400'
                       }`}
                     >
                       {m.content}
@@ -200,33 +182,32 @@ export default function VideoPage() {
                   </div>
                 ))}
                 {chatLoading && (
-                  <div className='flex items-center gap-2 text-xs text-blue-400 animate-pulse font-medium'>
-                    <Sparkles size={14} />
-                    <span>Gemini is thinking...</span>
+                  <div className='flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-blue-400 animate-pulse'>
+                    <Sparkles size={12} />
+                    <span>Processing...</span>
                   </div>
                 )}
               </div>
 
-              <div className='p-6 bg-black/20 border-t border-white/5'>
-                <div className='relative flex items-center gap-2'>
+              <div className='p-6 border-t border-white/5 bg-black sticky bottom-0'>
+                <div className='flex items-center gap-2'>
                   <input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && ask()}
-                    placeholder='Ask about the video...'
-                    className='flex-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30'
+                    placeholder='Ask about video...'
+                    className='flex-1 bg-zinc-950 border border-white/10 px-4 py-3 text-xs text-white outline-none focus:border-white transition placeholder:text-zinc-800'
                   />
                   <button
                     onClick={ask}
                     disabled={chatLoading || !q.trim() || !docId}
-                    className='p-3 rounded-xl bg-white/10 border border-white/10 text-white transition-all hover:bg-white/20 active:scale-95 disabled:opacity-30'
+                    className='p-3 bg-white text-black hover:bg-zinc-200 disabled:opacity-30 transition-all'
                   >
-                    <ArrowRight size={18} />
+                    <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
+           </div>
         </div>
       </div>
     </div>

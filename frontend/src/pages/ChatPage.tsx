@@ -39,36 +39,53 @@ export default function ChatPage() {
     }
   }
 
-  if (!docId) return <div className='p-8 text-slate-400'>Upload a document first.</div>
+  if (!docId) return <div className='p-8 text-zinc-500 font-bold uppercase tracking-widest text-xs'>Upload a document to start chatting.</div>
+  
   return (
-    <div className='mx-auto max-w-4xl p-8'>
-      <h2 className='mb-4 text-2xl font-semibold tracking-wide text-white'>Chat</h2>
-      <div className='mb-4 max-h-[60vh] space-y-3 overflow-auto rounded-2xl border border-white/10 bg-black/40 p-4'>
+    <div className='flex h-full flex-col p-8'>
+      <div className='mb-6 flex items-center justify-between border-b border-white/10 pb-4'>
+        <h2 className='text-xs font-bold uppercase tracking-[0.3em] text-zinc-400'>Neural Workspace / Chat</h2>
+      </div>
+      
+      <div className='flex-1 space-y-6 overflow-auto scrollbar-hide mb-8'>
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`whitespace-pre-wrap rounded-xl border p-3 text-sm ${
-              m.role === 'user'
-                ? 'border-white/25 bg-white/10 text-white'
-                : 'border-white/10 bg-white/5 text-slate-100'
-            }`}
+            className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
           >
-            {m.content}
+            <div className='mb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-600'>
+              {m.role === 'user' ? 'You' : 'Assistant'}
+            </div>
+            <div
+              className={`max-w-[80%] border p-4 text-sm leading-relaxed ${
+                m.role === 'user'
+                  ? 'border-white/10 bg-white text-black'
+                  : 'border-white/5 bg-zinc-900 text-zinc-300'
+              }`}
+            >
+              {m.content}
+            </div>
           </div>
         ))}
-        {loading && <div className='rounded-xl border border-white/10 bg-white/5 p-3 text-slate-400'>Thinking...</div>}
+        {loading && (
+          <div className='flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white animate-pulse'>
+            <span>Thinking...</span>
+          </div>
+        )}
       </div>
-      <div className='flex gap-2'>
+
+      <div className='flex gap-2 bg-black border-t border-white/10 pt-4 sticky bottom-0'>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className='flex-1 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-white/35'
-          placeholder='Ask about your doc'
+          onKeyDown={(e) => e.key === 'Enter' && ask()}
+          className='flex-1 bg-zinc-950 border border-white/10 p-4 text-sm text-white outline-none focus:border-white transition placeholder:text-zinc-700'
+          placeholder='Send message...'
         />
         <button
           onClick={ask}
           disabled={loading || !q.trim()}
-          className='rounded-xl border border-white/20 bg-white px-4 text-sm font-semibold text-black transition hover:bg-slate-200 disabled:opacity-60'
+          className='bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-black hover:bg-zinc-200 disabled:opacity-30'
         >
           Send
         </button>
