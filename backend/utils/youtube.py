@@ -1,34 +1,42 @@
 import re
 import httpx
+import logging
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 from backend.config import get_settings
 
-def extract_video_id(url: str) -> str:
+logger = logging.getLogger(__name__)
+
+def extract_video_id(url_or_id: str) -> str:
     """
-    Extracts the 11-character YouTube video ID from various URL formats.
-    Supports: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, etc.
+    Extracts the 11-character YouTube video ID from various URL formats or plain ID.
+    Supports: watch?v=ID, youtu.be/ID, embed/ID, shorts/ID, or plain ID.
     """
-    regex = r'(?:v=|\/|embed\/|youtu\.be\/)([0-9A-Za-z_-]{11})(?:[&?]|$)'
-    match = re.search(regex, url)
-    if not match: 
-        raise ValueError('Invalid YouTube URL or Video ID')
-    return match.group(1)
+    url_or_id = url_or_id.strip()
+    
+    # If it's already a plain 11-char ID
+    if len(url_or_id) == 11 and re.match(r'^[0-9A-Za-z_-]{11}$', url_or_id):
+        return url_or_id
+
+    # Regex for various URL formats
+    regex = r'(?:v=|\/|embed\/|shorts\/|youtu\.be\/)([0-9A-Za-z_-]{11})(?:[&?]|$)'
+    match = re.search(regex, url_or_id)
+    if match: 
+        return match.group(1)
+    
+    raise ValueError(f'Invalid YouTube URL or Video ID: {url_or_id}')
 
 async def get_youtube_metadata(video_id: str) -> dict:
     """
-    Step 1: Fetch metadata (title, description) via YouTube Data API v3.
+    Step 1: Fetch metadata via YouTube Data API v3.
     """
     settings = get_settings()
     api_key = settings.YOUTUBE_API_KEY
     if not api_key:
+        logger.warning("YOUTUBE_API_KEY not set, skipping metadata fetch")
         return {}
 
     url = "https://www.googleapis.com/youtube/v3/videos"
-    params = {
-        "part": "snippet",
-        "id": video_id,
-        "key": api_key
-    }
+    params = {"part": "snippet", "id": video_id, "key": api_key}
 
     try:
         async with httpx.AsyncClient() as client:
@@ -37,71 +45,79 @@ async def get_youtube_metadata(video_id: str) -> dict:
                 data = response.json()
                 if data.get("items"):
                     snippet = data["items"][0]["snippet"]
+                    logger.info(f"Successfully fetched metadata for {video_id}")
                     return {
                         "title": snippet.get("title", ""),
                         "description": snippet.get("description", ""),
-                        "tags": snippet.get("tags", [])
                     }
+            logger.warning(f"YouTube API returned status {response.status_code} for {video_id}")
     except Exception as e:
-        print(f"YouTube Data API Error: {e}")
+        logger.error(f"YouTube Data API Error for {video_id}: {e}")
     
     return {}
 
 def get_transcript_only(video_id: str) -> str:
     """
-    Step 2: Fetch transcript with priority: English -> Auto-generated -> Any available.
+    Step 2: Fetch transcript with priority logic.
     """
+    # 1. Try English
     try:
-        # Priority 1: English
-        try:
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-        except (TranscriptsDisabled, NoTranscriptFound):
-            # Priority 2: Auto-generated English variants
-            try:
-                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
-            except (TranscriptsDisabled, NoTranscriptFound):
-                # Priority 3: Fetch any available
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-                transcript = transcript_list.find_transcript(['en', 'hi', 'es', 'fr', 'ja', 'ko']).fetch()
-
+        logger.info(f"Attempting English transcript for {video_id}")
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
         return ' '.join([t['text'] for t in transcript])
-    except Exception:
+    except (TranscriptsDisabled, NoTranscriptFound):
+        logger.info(f"No English transcript for {video_id}, trying auto-generated/other")
+    except Exception as e:
+        logger.warning(f"Transcript error (Step 2a) for {video_id}: {e}")
+
+    # 2. Try any available
+    try:
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        # Picks the first one available
+        transcript = next(iter(transcript_list)).fetch()
+        logger.info(f"Successfully fetched non-English/fallback transcript for {video_id}")
+        return ' '.join([t['text'] for t in transcript])
+    except Exception as e:
+        logger.error(f"All transcript attempts failed for {video_id}: {e}")
         return ""
 
-async def get_youtube_content(url: str) -> str:
+async def get_youtube_content(url_or_id: str) -> str:
     """
-    Combines Metadata and Transcript for a smarter fallback strategy.
-    Optimized for token efficiency.
+    Priority: Metadata Description -> English Transcript -> Any Transcript.
     """
+    logger.info(f"Starting content extraction for: {url_or_id}")
+    
     try:
-        video_id = extract_video_id(url)
+        video_id = extract_video_id(url_or_id)
+        logger.info(f"Extracted Video ID: {video_id}")
     except ValueError as e:
+        logger.error(str(e))
         raise RuntimeError(str(e))
 
-    # Step 1: Metadata
+    # Step A: Metadata
     metadata = await get_youtube_metadata(video_id)
     title = metadata.get("title", "")
     description = metadata.get("description", "")
     
-    # Step 2: Transcript
+    # Step B: Transcript
     transcript = get_transcript_only(video_id)
 
-    # Step 3: Combine logic
     parts = []
     if title:
         parts.append(f"TITLE: {title}")
     
-    # If description is meaningful, include it (limit to first 1000 chars for token efficiency)
+    # Use description if it's substantial
     if len(description) > 200:
+        logger.info(f"Using video description as context (>200 chars) for {video_id}")
         clean_desc = description[:1000] + "..." if len(description) > 1000 else description
         parts.append(f"DESCRIPTION: {clean_desc}")
     
     if transcript:
-        # Keep transcript as primary source, but join into one string
+        logger.info(f"Using transcript for {video_id} ({len(transcript)} chars)")
         parts.append(f"TRANSCRIPT: {transcript}")
 
-    # Step 4: Final Output
     if not parts:
+        logger.error(f"Failed to retrieve any content for {video_id}")
         raise RuntimeError("Could not retrieve content for this video. It may be private, age-restricted, or have no captions.")
 
     return "\n\n".join(parts)
