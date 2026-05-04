@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
-from backend.utils.youtube import get_youtube_transcript
+from backend.utils.youtube import get_youtube_content
 from rag.ingest_pipeline import ingest_document
 from agents.graph import run_video
 
@@ -14,8 +14,9 @@ class YoutubeRequest(BaseModel):
 @router.post('/youtube')
 async def youtube_transcript_endpoint(req: YoutubeRequest, background_tasks: BackgroundTasks):
     try:
-        # 1. Fast Fetch (Offloaded to thread pool to avoid blocking event loop)
-        text = await run_in_threadpool(get_youtube_transcript, req.url)
+        # 1. Smarter Content Fetch (Metadata + Transcripts)
+        text = await get_youtube_content(req.url)
+
 
         
         # 2. Background Ingestion (non-blocking)
