@@ -1,6 +1,7 @@
 # SOLO TUTOR
 
 AI-powered study app: chat with documents, generate quizzes, explain code, summarize videos.
+The minimalist research ecosystem for self-directed learners. Synthesize complex sources into structured mastery at the speed of thought.
 
 ## Current UI Routes
 
